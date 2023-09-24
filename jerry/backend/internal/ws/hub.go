@@ -18,7 +18,6 @@ const (
 	leaveMsg
 )
 
-// Message - data packet that transfered between hub and client through ws conn
 type Message struct {
 	Typ        int         `json:"typ"`
 	Data       interface{} `json:"data"`
@@ -28,23 +27,16 @@ type Message struct {
 	client *Client
 }
 
-// Hub maintains the set of active clients and broadcasts messages to the
-// clients.
 type Hub struct {
-	// Registered clients.
 	clients map[int]*Client
 
-	// Inbound messages from the clients.
 	broadcast chan *Message
 
-	// Register requests from the clients.
 	register chan *Client
 
-	// Unregister requests from clients.
 	unregister chan int
 }
 
-// NewHub - create and run a new hub
 func NewHub() {
 	hub = &Hub{
 		broadcast:  make(chan *Message),

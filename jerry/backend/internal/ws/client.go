@@ -23,12 +23,6 @@ const (
 	maxMessageSize = 512
 )
 
-var (
-	newline = []byte{'\n'}
-	space   = []byte{' '}
-)
-
-// CheckOrigin returns true if the request's origin is in allowed list
 func CheckOrigin(r *http.Request) bool {
 	return true
 }
@@ -39,30 +33,22 @@ var upgrader = websocket.Upgrader{
 	CheckOrigin:     CheckOrigin,
 }
 
-// Client is a middleman between the websocket connection and the hub.
 type Client struct {
 	id int
 
 	hub *Hub
 
-	// The websocket connection.
 	conn *websocket.Conn
 
-	// Buffered channel of outbound messages.
 	send chan []byte
 }
 
-// readPump pumps messages from the websocket connection to the hub.
-//
-// The application runs readPump in a per-connection goroutine. The application
-// ensures that there is at most one reader on a connection by executing all
-// reads from this goroutine.
 func (c *Client) readPump() {
 	defer func() {
 		c.hub.unregister <- c.id
 		c.conn.Close()
 	}()
-	// c.conn.SetReadLimit(maxMessageSize)
+
 	c.conn.SetReadDeadline(time.Now().Add(pongWait))
 	c.conn.SetPongHandler(func(string) error { c.conn.SetReadDeadline(time.Now().Add(pongWait)); return nil })
 	for {
@@ -76,7 +62,6 @@ func (c *Client) readPump() {
 			break
 		}
 
-		// message = bytes.TrimSpace(bytes.Replace(message, newline, space, -1))
 		msg := &Message{client: c}
 		err = json.Unmarshal(raw, msg)
 		if err != nil {
@@ -88,11 +73,6 @@ func (c *Client) readPump() {
 	}
 }
 
-// writePump pumps messages from the hub to the websocket connection.
-//
-// A goroutine running writePump is started for each connection. The
-// application ensures that there is at most one writer to a connection by
-// executing all writes from this goroutine.
 func (c *Client) writePump() {
 	ticker := time.NewTicker(pingPeriod)
 	defer func() {
@@ -129,7 +109,6 @@ func (c *Client) writePump() {
 	}
 }
 
-// Serve handles websocket requests from the peer.
 func Serve(w http.ResponseWriter, r *http.Request) {
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
@@ -139,8 +118,6 @@ func Serve(w http.ResponseWriter, r *http.Request) {
 	client := &Client{hub: hub, conn: conn, send: make(chan []byte, 256)}
 	hub.register <- client
 
-	// Allow collection of memory referenced by the caller by doing all work in
-	// new goroutines.
 	go client.writePump()
 	go client.readPump()
 }

@@ -11,9 +11,6 @@ import (
 	"github.com/phuwn/go-video-conference/ws"
 )
 
-// JSON - shorcut for handler.JSON function
-var JSON = handler.JSON
-
 func router() *echo.Echo {
 	r := echo.New()
 	r.HTTPErrorHandler = handler.JSONError
