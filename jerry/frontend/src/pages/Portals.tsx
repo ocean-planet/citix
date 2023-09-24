@@ -1,8 +1,10 @@
 import { useEffect, useRef, useState } from "react"
 import { motion } from "framer-motion"
+import { PackedGrid } from "react-packed-grid"
 import { CityInfo } from "@/widgets/CityInfo"
 import { Button } from "@/shared/ui"
 import clsx from "clsx"
+import { Link } from "react-router-dom"
 
 export function PortalsPage() {
   const API_URL = "wss://jerry.sus.kz/ws"
@@ -49,14 +51,14 @@ export function PortalsPage() {
     }
   }
 
-  // function createPeerConnection() {
-  //   const pc = new RTCPeerConnection(configuration)
-  //   // Any required set up...
-  //   return pc
-  // }
-  async function offer(id: number) {
+  function createPeerConnection() {
     const pc = new RTCPeerConnection(configuration)
-    // const pc = createPeerConnection()
+    // Any required set up...
+    return pc
+  }
+  async function offer(id: number) {
+    // const pc = new RTCPeerConnection(configuration)
+    const pc = createPeerConnection()
 
     pc.oniceconnectionstatechange = () =>
       console.log("Ice connection state", pc.iceConnectionState)
@@ -78,7 +80,7 @@ export function PortalsPage() {
     }
 
     if (localStream) {
-      await localStream
+      localStream
         .getTracks()
         .forEach((track) => pc.addTrack(track, localStream))
       const d = await pc.createOffer(offerOptions)
@@ -90,8 +92,7 @@ export function PortalsPage() {
   }
 
   async function answer(id: string, offerDesc: RTCSessionDescriptionInit) {
-    // const pc = createPeerConnection()
-    const pc = new RTCPeerConnection(configuration)
+    const pc = createPeerConnection()
 
     pc.oniceconnectionstatechange = () =>
       console.log("Ice connection state", pc.iceConnectionState)
@@ -111,7 +112,7 @@ export function PortalsPage() {
     }
 
     if (localStream) {
-      await localStream
+      localStream
         .getTracks()
         .forEach((track) => pc.addTrack(track, localStream))
 
@@ -127,6 +128,7 @@ export function PortalsPage() {
   useEffect(() => {
     if (webSocket) {
       webSocket.onmessage = async function (evt) {
+        console.log(evt)
         const { typ, sender_id, data } = JSON.parse(evt.data)
 
         switch (typ) {
@@ -142,6 +144,22 @@ export function PortalsPage() {
             webSocket.send(
               JSON.stringify({ typ: 2, receiver_id: sender_id, data: desc }),
             )
+
+            // close
+
+            // if (pc === undefined || pc === null) {
+            //   return
+            // }
+
+            // pc.close()
+            //
+            // peerConnectionMap.forEach((pc) => pc.close())
+
+            // remove sender_id from remoteStreamMap
+            // const newRemoteStreamMap = new Map(remoteStreamMap)
+            // newRemoteStreamMap.delete(sender_id)
+            // setRemoteStreamMap(newRemoteStreamMap)
+
             break
           }
           case 2:
@@ -151,7 +169,7 @@ export function PortalsPage() {
             updateCandidate(sender_id, data)
             break
           case 4:
-            closePC(sender_id)
+            closePeerConnection(sender_id)
             break
           default:
             console.log("Invalid message type", typ)
@@ -184,14 +202,21 @@ export function PortalsPage() {
     pc.addIceCandidate(candidate)
   }
 
-  const closePC = (id: string) => {
+  const closePeerConnection = (id: string) => {
     const pc = peerConnectionMap.get(id)
     if (pc === undefined || pc === null) {
       return
     }
 
     pc.close()
-    peerConnectionMap.delete(id)
+    // const newPeerConnectionMap = new Map(peerConnectionMap)
+    // peerConnectionMap.delete(id)
+    // setPeerConnectionMap(new Map(newPeerConnectionMap))
+
+    // // remove id from remoteStreamMap
+    const newRemoteStreamMap = new Map(remoteStreamMap)
+    newRemoteStreamMap.delete(id)
+    setRemoteStreamMap(newRemoteStreamMap)
   }
 
   const call = () => {
@@ -232,13 +257,13 @@ export function PortalsPage() {
           animate={{ y: 0, opacity: 1 }}
           transition={{ duration: 0.7, ease: [0.6, -0.05, 0.01, 0.99] }}
         >
-          <div className="animate-background relative inline-block h-[85svh] mt-4 rounded-lg w-full bg-white from-blue-700 via-red-500 to-yellow-500 bg-[length:_400%_400%] p-0.5 [animation-duration:_6s] bg-gradient-to-r">
-            <div className="flex bg-black h-full justify-center w-full text-white rounded-lg">
+          <div className="animate-background relative inline-block mt-4 rounded-lg w-full bg-white from-blue-700 via-red-500 to-yellow-500 bg-[length:_400%_400%] p-0.5 [animation-duration:_6s] bg-gradient-to-r">
+            <div className="bg-black h-full justify-center w-full text-white rounded-lg">
               <video
                 className={clsx("rounded-lg object-cover", [
                   [
                     [...remoteStreamMap.entries()].length === 0
-                      ? "w-full"
+                      ? "w-full h-[calc(90vh-4rem)]"
                       : "w-48 h-auto absolute bottom-4 right-4",
                   ],
                 ])}
@@ -247,12 +272,12 @@ export function PortalsPage() {
                 autoPlay
                 muted
               />
-              <div className="grid grid-flow-row-dense w-full gap-4 auto-rows-min">
-                {[...remoteStreamMap.entries()].map(([id, stream]) => (
+              <div className="video-layout">
+                {[...remoteStreamMap.entries()].map(([id, stream], i) => (
                   <video
+                    className={`layout-inner-${i + 1}`}
                     key={id}
                     autoPlay
-                    className="object-cover w-full h-screen"
                     ref={(videoRef) => {
                       if (videoRef && videoRef.srcObject !== stream) {
                         videoRef.srcObject = stream
@@ -261,7 +286,7 @@ export function PortalsPage() {
                   />
                 ))}
               </div>
-              <div className="absolute bottom-6">
+              <div className="absolute flex items-center justify-center w-full bottom-6 z-50">
                 {!startButtonDisabled && (
                   <Button
                     color="primary"
@@ -273,9 +298,11 @@ export function PortalsPage() {
                   </Button>
                 )}
                 {startButtonDisabled && (
-                  <Button color="error" onClick={hangup} className="btn">
-                    Отключиться
-                  </Button>
+                  <Link to="/apps">
+                    <Button color="error" onClick={hangup} className="btn">
+                      Отключиться
+                    </Button>
+                  </Link>
                 )}
               </div>
             </div>
