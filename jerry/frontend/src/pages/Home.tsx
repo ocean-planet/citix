@@ -113,25 +113,25 @@ export function HomePage() {
           <div
             className={`flex flex-col w-full m-auto h-screen ${slides[selectedSlide].background}`}
           >
-            <div className="py-3 px-4 space-y-6 w-full">
+            <div className="py-3 px-6 space-y-6 w-full">
               <Slides
                 duration={5000}
                 count={count}
                 onChange={(index) => setSelectedSlide(index)}
               />
-              <h1 className="text-white font-medium text-[6em] leading-[6rem]">
+              <h1 className="text-white font-medium text-[10.5rem] leading-[11rem]">
                 {slides[selectedSlide].title}
               </h1>
-              <h2 className="text-white font-medium text-5xl text-opacity-75 leading-[3.5rem]">
+              <h2 className="text-white font-medium text-7xl text-opacity-70 leading-[4.5rem]">
                 {slides[selectedSlide].subtitle}
               </h2>
             </div>
-            <div className="flex  items-center gap-3 text-white font-medium text-xl text-opacity-90 text-right mt-auto px-4 mb-6">
+            <div className="flex  items-center gap-3 text-white font-medium text-6xl text-opacity-90 text-right mt-auto px-4 mb-6">
               {formatDate(new Date().toISOString(), "medium")}
             </div>
             <Icon
               name="fluent:tap-double-48-regular"
-              className="absolute text-white bottom-2 right-2 w-64 h-auto opacity-50"
+              className="absolute text-white bottom-2 right-2 w-96 h-auto opacity-50"
             />
           </div>
         </Link>
